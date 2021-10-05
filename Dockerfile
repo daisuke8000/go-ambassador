@@ -2,6 +2,9 @@ FROM golang:1.17
 
 WORKDIR /app
 
+# Build Delve
+RUN go get github.com/go-delve/delve/cmd/dlv
+
 # COPY
 COPY go.mod .
 COPY go.sum .
