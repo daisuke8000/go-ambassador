@@ -1,16 +1,18 @@
 version: '3.9'
 services:
   backend:
-#    tty: true
     build: .
     ports:
       - 8000:8000
+      - 40000:40000
     volumes:
       - .:/app
     depends_on:
       - db
-#    environment:
-#      WAIT_HOSTS: db:3306
+    security_opt:
+      - apparmor:unconfined
+    cap_add:
+      - SYS_PTRACE
 
   db:
     image: mysql:5.7.22
