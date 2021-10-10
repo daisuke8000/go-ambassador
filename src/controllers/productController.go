@@ -28,13 +28,41 @@ func CreateProducts(c *fiber.Ctx) error {
 }
 
 func GetProduct(c *fiber.Ctx) error {
-	var product models.Product
-
 	id, _ := strconv.Atoi(c.Params("id"))
+
+	var product models.Product
 
 	product.Id = uint(id)
 
 	database.DB.Find(&product)
 
 	return c.JSON(product)
+}
+
+func UpdateProduct(c *fiber.Ctx) error {
+	id, _ := strconv.Atoi(c.Params("id"))
+
+	product := models.Product{}
+	product.Id = uint(id)
+
+	if err := c.BodyParser(&product); err != nil {
+		return err
+	}
+
+	database.DB.Model(&product).Updates(&product)
+
+	return c.JSON(product)
+}
+
+func DeleteProduct(c *fiber.Ctx) error {
+	id, _ := strconv.Atoi(c.Params("id"))
+
+	product := models.Product{}
+	product.Id = uint(id)
+
+	database.DB.Model(&product).Delete(&product)
+
+	return c.JSON(fiber.Map{
+		"message": "deleted successfully. to Id: " + c.Params("id"),
+	})
 }
