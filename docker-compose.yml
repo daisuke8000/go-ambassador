@@ -1,7 +1,10 @@
 version: '3.9'
 services:
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
     ports:
       - 8000:8000
       - 40000:40000
