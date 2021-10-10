@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"ambassador-backend/src/database"
+	"ambassador-backend/src/middlewares"
 	"ambassador-backend/src/models"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gofiber/fiber/v2"
@@ -9,6 +10,7 @@ import (
 	"time"
 )
 
+// Register logic
 func Register(c *fiber.Ctx) error {
 	var data map[string]string
 
@@ -37,6 +39,7 @@ func Register(c *fiber.Ctx) error {
 	return c.JSON(user)
 }
 
+// Login logic
 func Login(c *fiber.Ctx) error {
 	var data map[string]string
 
@@ -98,6 +101,84 @@ func Login(c *fiber.Ctx) error {
 	c.Cookie(&cookie)
 
 	return c.JSON(fiber.Map{
-		"message": "success!",
+		"message": "login, success!",
 	})
+}
+
+// User Authorization logic
+func User(c *fiber.Ctx) error {
+
+	id, _ := middlewares.GetUserId(c)
+
+	var user models.User
+
+	database.DB.Where("id = ?", id).First(&user)
+
+	return c.JSON(user)
+}
+
+// Logout logic
+func Logout(c *fiber.Ctx) error {
+	cookie := fiber.Cookie{
+		Name: "jwt",
+		Value: "",
+		Expires: time.Now().Add(-time.Hour),
+		HTTPOnly: true,
+	}
+
+	c.Cookie(&cookie)
+
+	return c.JSON(fiber.Map{
+		"message": "logout, success",
+	})
+}
+
+// UpdateInfo logic
+func UpdateInfo(c *fiber.Ctx) error {
+	var data map[string]string
+
+	if err := c.BodyParser(&data); err != nil {
+		return err
+	}
+
+	id, _ := middlewares.GetUserId(c)
+
+	user := models.User {
+		Id: id,
+		FirstName: data["first_name"],
+		LastName: data["last_name"],
+		Email: data["email"],
+	}
+
+	database.DB.Model(&user).Updates(&user)
+
+	return c.JSON(user)
+}
+
+// UpdatePassword logic
+func UpdatePassword(c *fiber.Ctx) error {
+	var data map[string]string
+
+	if err := c.BodyParser(&data); err != nil {
+		return err
+	}
+
+	if data["password"] != data["password_confirm"] {
+		c.Status(400)
+		return c.JSON(fiber.Map{
+			"message": "passwords do not match",
+		})
+	}
+
+	id, _ := middlewares.GetUserId(c)
+
+	user := models.User {
+		Id: id,
+	}
+
+	user.SetPassword(data["password"])
+
+	database.DB.Model(&user).Updates(&user).Where("id = ?", id).First(&user)
+
+	return c.JSON(user)
 }
