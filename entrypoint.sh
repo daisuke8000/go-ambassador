@@ -8,4 +8,6 @@ done
 echo "Connection Successfully"
 
 exec "$@"
-exec air -c air.toml
+#debug毎にリモートが切れるため使用不可
+#exec air -c air.toml
+exec dlv exec ./tmp/main --listen=:40000 --headless=true --api-version=2
