@@ -21,6 +21,7 @@
 /tmp
 /tmp/main
 .dockerignore
-.vscode/
+.vscode
+.devcontainer
 
 
