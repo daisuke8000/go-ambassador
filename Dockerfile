@@ -17,8 +17,8 @@ RUN chmod +x entrypoint.sh && \
     go get github.com/go-delve/delve/cmd/dlv && \
     go get github.com/cosmtrek/air
 
-COPY . ${ROOT}
+COPY . .
 
-RUN go build -o /app/tmp/main ${ROOT}
+RUN go build -o /app/tmp/main .
 
 CMD ["sh", "entrypoint.sh"]

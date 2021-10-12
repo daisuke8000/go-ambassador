@@ -12,6 +12,7 @@ services:
       - .:/app
     depends_on:
       - db
+      - redis
     security_opt:
       - apparmor:unconfined
     cap_add:
@@ -29,3 +30,8 @@ services:
       - .dbdata:/var/lib/mysql
     ports:
       - "33066:3306"
+
+  redis:
+   image: redis:latest
+   ports:
+     - "6379:6379"
