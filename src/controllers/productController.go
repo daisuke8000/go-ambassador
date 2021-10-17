@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/gofiber/fiber/v2"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -27,6 +28,8 @@ func CreateProducts(c *fiber.Ctx) error {
 	}
 
 	database.DB.Create(&product)
+
+	go database.ClearCache("products_frontend", "products_backend")
 
 	return c.JSON(product)
 }
@@ -54,8 +57,18 @@ func UpdateProduct(c *fiber.Ctx) error {
 	}
 
 	database.DB.Model(&product).Updates(&product)
+	// Patern1
+	//go database.ClearCache("products_frontend")
+	//go database.ClearCache("products_backend")
+	// Patern2
+	go database.ClearCache("products_frontend", "products_backend")
 
 	return c.JSON(product)
+}
+
+func deleteCache(key string){
+	time.Sleep(5 * time.Second)
+	database.Cache.Del(context.Background(), key)
 }
 
 func DeleteProduct(c *fiber.Ctx) error {
@@ -65,6 +78,8 @@ func DeleteProduct(c *fiber.Ctx) error {
 	product.Id = uint(id)
 
 	database.DB.Model(&product).Delete(&product)
+
+	go database.ClearCache("products_frontend", "products_backend")
 
 	return c.JSON(fiber.Map{
 		"message": "deleted successfully. to Id: " + c.Params("id"),
@@ -129,5 +144,36 @@ func ProductBackend(c *fiber.Ctx) error {
 		searchedProducts = products
 	}
 
-	return c.JSON(searchedProducts)
+	if sortParam := c.Query("sort"); sortParam != "" {
+		sortLower := strings.ToLower(sortParam)
+		if sortLower == "asc" {
+			sort.Slice(searchedProducts, func(i, j int) bool{
+				return searchedProducts[i].Price < searchedProducts[j].Price
+			})
+		} else if sortLower == "desc" {
+			sort.Slice(searchedProducts, func(i, j int) bool {
+				return searchedProducts[i].Price > searchedProducts[j].Price
+			})
+		}
+	}
+
+	var total = len(searchedProducts)
+	page, _ := strconv.Atoi(c.Query("page","1"))
+	perPage := 9
+
+	var data []models.Product
+
+	if total <= page*perPage && total >= (page-1)*perPage {
+		data = searchedProducts[(page-1)*perPage :total]
+	}else if total >= page*perPage {
+		data = searchedProducts[(page-1)*perPage : page*perPage]
+	}else {
+		data = []models.Product{}
+	}
+	return c.JSON(fiber.Map{
+		"data": data,
+		"total": total,
+		"page": page,
+		"last_page": total/perPage + 1,
+ 	})
 }
