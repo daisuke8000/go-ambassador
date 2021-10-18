@@ -23,5 +23,6 @@
 .dockerignore
 .vscode
 .devcontainer
+.env
 
 
