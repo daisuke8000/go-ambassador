@@ -4,9 +4,12 @@ import (
 	"ambassador-backend/src/database"
 	"ambassador-backend/src/models"
 	"context"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 	"github.com/stripe/stripe-go/v72"
 	"github.com/stripe/stripe-go/v72/checkout/session"
+	"net/smtp"
 	"os"
 )
 
@@ -115,6 +118,11 @@ func CreateOrder(c *fiber.Ctx) error {
 			Quantity: stripe.Int64(int64(requestProduct["quantity"])),
 		})
 	}
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		fmt.Printf("doesn't load .env: %v", err)
+	}
 
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
 
@@ -188,6 +196,14 @@ func CompleteOrder(c *fiber.Ctx) error {
 		database.DB.First(&user)
 
 		database.Cache.ZIncrBy(context.Background(), "rankings", ambassadorRevenue, user.Name())
+
+		ambassadorMessage := []byte(fmt.Sprintf("You earned $%f from the link #%s", ambassadorRevenue, order.Code))
+
+		smtp.SendMail("host.docker.internal:1025", nil, "no-replay@email.com", []string{order.AmbassadorEmail}, ambassadorMessage)
+
+		adminMessage := []byte(fmt.Sprintf("Order #%d with a total of $%f has been completed", order.Id, adminRevenue))
+
+		smtp.SendMail("host.docker.internal:1025", nil, "no-replay@email.com", []string{"admin@admin.com"}, adminMessage)
 
 	}(order)
 
